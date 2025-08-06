@@ -10,8 +10,8 @@ pub const G: f64 = 6.6743e-11;
 // in order to avoid heap allocations each time we run this function, we can instead return a
 // fixed-size array and just note how many of the roots (either 1 or 3) are valid
 
-// we can make this easier to comprehend with the cardano struct above
-#[pyfunction]
+/// A Rust implementation of a dedicated cubic root solver for McFACTS
+#[pyfunction(signature = (x0, y0))]
 pub fn cubic_y_root_cardano(x0: f64, y0: f64) -> ([f64; 3], usize) {
     if x0 == 0.0 {
         ([y0/1.5, 0.0, 0.0], 1) //padding out the array
@@ -40,7 +40,7 @@ pub fn cubic_y_root_cardano(x0: f64, y0: f64) -> ([f64; 3], usize) {
     }
 }
 
-#[pyfunction]
+#[pyfunction(signature=(x0, y0, omega_s))]
 pub fn cubic_finite_step_root_cardano(
     x0: f64,
     y0: f64,
@@ -109,69 +109,6 @@ pub fn cubic_finite_step_root_cardano(
 
     (buffer, pair_count)
 }
-// #[pyfunction]
-// pub fn cubic_finite_step_root_cardano(
-//     x0: f64, 
-//     y0: f64, 
-//     omega_s: f64
-// ) -> ([[f64; 2]; 3], usize) {
-//     let p = 2.0 * (x0 - (omega_s * y0));
-//     let q = 2.0 * omega_s;
-//
-//     let roots_y = if p == 0.0 {
-//         ([(-q).cbrt(), 0.0, 0.0], 1)
-//     } else {
-//         let delta = (q/2.0).powi(2) + (p/3.0).powi(3);
-//
-//         if delta > 0.0 {
-//             // one real root path
-//             let sqrt_delta = delta.sqrt();
-//             let u = (-q/2.0 + sqrt_delta).cbrt();
-//             let v = (-q/2.0 - sqrt_delta).cbrt();
-//             ([u + v, 0.0, 0.0], 1)
-//         } else {
-//             // three real roots path
-//             let term1 = 2.0 * (-p / 3.0).sqrt();
-//             let phi = ((3.0 * q) / (p * term1)).acos();
-//
-//             let y1 = term1 * (phi / 3.0).cos();
-//             let y2 = term1 * ((phi + 2.0 * PI) / 3.0).cos();
-//             let y3 = term1 * ((phi + 4.0 * PI) / 3.0).cos();
-//             ([y1, y2, y3], 3)
-//         }
-//     };
-//
-//     // 1. Initialize a 2D buffer. It's an array of 3 elements, where each
-//     //    element is an array of 2 f64s, i.e., an [x, y] pair.
-//     let mut buffer = [[0.0; 2]; 3];
-//     let mut pair_count = 0;
-//
-//     // 2. Iterate through only the *valid* y-roots using the y_count.
-//     // ????????
-//     for i in 0..roots_y.1 {
-//         let y_root = roots_y.0[i];
-//
-//         // 3. The condition to form a valid pair is that the y-root can be used
-//         //    to calculate a corresponding x-root.
-//         if y_root > 0.0 {
-//             // Ensure we don't write past the end of our 3-element buffer.
-//             if pair_count < 3 {
-//                 // Calculate the corresponding x-root inside the loop.
-//                 let x_root = -1.0 / (2.0 * y_root * y_root);
-//
-//                 // 4. Assign the completed [x, y] pair to a row in the buffer.
-//                 buffer[pair_count] = [x_root, y_root];
-//                 pair_count += 1;
-//             } else {
-//                 // This case should be unreachable if y_count is max 3,
-//                 // but it is good practice for safety.
-//                 panic!("Exceeded maximum root pair capacity!");
-//             }
-//         }
-//     }
-//
-//     (buffer, pair_count)
-// }
 
 fn components_from_el(e: f64, l:f64, units: Option<&str>, smbh_mass: f64) -> (f64, f64) {
 
@@ -203,7 +140,7 @@ fn components_from_el(e: f64, l:f64, units: Option<&str>, smbh_mass: f64) -> (f6
 }
 
 #[allow(clippy::too_many_arguments)]
-#[pyfunction]
+#[pyfunction(signature = (e1, l1, e2, l2, delta_e, m1, m2, units = None, smbh_mass = None))]
 pub fn transition_physical_as_el(
     e1: f64, 
     l1: f64,
@@ -326,7 +263,7 @@ pub fn transition_physical_as_el(
 
 /// Calculate new orb_a and ecc values for two objects that dynamically interact
 #[allow(clippy::too_many_arguments)]
-#[pyfunction]
+#[pyfunction(signature=(smbh_mass, orb_a_give, orb_a_take, mass_give, mass_take, ecc_give, ecc_take, radius_give, radius_take, id_num_give, id_num_take, delta_energy_strong, flag_obj_types))]
 pub fn encounters_new_orba_ecc(
     smbh_mass: f64,
     orb_a_give: f64,
@@ -434,4 +371,78 @@ pub fn encounters_new_orba_ecc(
 }
 
 
-
+// // A struct to hold the results that aren't direct array mutations.
+// struct EncounterResults {
+//     newly_unbound_ids: Vec<i64>,
+//     newly_flipped_ids: Vec<i64>,
+//     possible_touch_pairs: Vec<[i64; 2]>,
+//     frac_rhill_separations: Vec<f64>,
+// }
+//
+// #[pyfunction]
+// fn process_inner_loop(
+//     // Data for the single circular star
+//     circ_idx: usize,
+//     circ_orb_a: f64,
+//     circ_mass: f64,
+//     // ... other circ_ star properties
+//
+//     // Data for ALL eccentric stars (as read-only NumPy arrays)
+//     ecc_indices: Vec<i64>,
+//     ecc_orbs_a: Vec<f64>,
+//     ecc_orbs_ecc: Vec<f64>,
+//     // ... other ecc_ star properties
+//
+//     disk_star_pro_id_nums: Vec<usize>,
+//     // Pre-generated random numbers for this specific outer loop `i`
+//     chances_for_this_circ: Vec<f64>,
+//     energies_for_this_circ: Vec<f64>,
+//
+//     // The main arrays we need to MUTATE
+//     mut all_orbs_a: Vec<f64>,
+//     mut all_orbs_ecc: Vec<f64>,
+//
+//
+//     mut id_nums_flipped_rotation: Vec<usize>,
+//     mut id_nums_unbound: Vec<usize>,
+//
+//     // Other parameters
+//     smbh_mass: f64,
+//     // ...
+// ) -> EncounterResults {
+//     let mut results = EncounterResults { /* ... initialize empty vecs ... */ };
+//     let mut all_a = all_orbs_a.as_mut(); // Get a mutable view
+//     let mut all_ecc = all_orbs_ecc.as_mut();
+//
+//     // The fast Rust loop
+//     for (j, &ecc_idx) in ecc_indices.as_array().iter().enumerate() {
+//         // ... perform all the logic from your Python inner loop ...
+//         // ... using the passed-in data ...
+//
+//         if !id_nums_flipped_rotation.contains(disk_star_pro_id_nums[ecc_idx]) 
+//             && !id_nums_flipped_rotation.contains(disk_star_pro_id_nums[&circ_idx])
+//             && !id_nums_unbound.contains(disk_star_pro_id_nums[&circ_idx])
+//             && !id_nums_unbound.contains(disk_star_pro_id_nums[ecc_idx]) {
+//
+//         }
+//         // if (disk_star_pro_id_nums[ecc_idx] not in id_nums_flipped_rotation) and
+//         //     (disk_star_pro_id_nums[circ_idx] not in id_nums_flipped_rotation) and
+//         //     (disk_star_pro_id_nums[circ_idx] not in id_nums_unbound) and
+//         //     (disk_star_pro_id_nums[ecc_idx] not in id_nums_unbound):
+//         if an_encounter_happens {
+//             // ... call your existing helper `encounters_new_orba_ecc` ...
+//             // which could also be a pure Rust function now.
+//
+//             // Mutate the arrays directly
+//             all_a[ecc_idx as usize] = new_orb_a_ecc;
+//             all_a[circ_idx] = new_orb_a_circ;
+//             all_ecc[ecc_idx as usize] = new_ecc_ecc;
+//             all_ecc[circ_idx] = new_ecc_circ;
+//
+//             // Collect other results
+//             // results.newly_unbound_ids.push(id_num_out);
+//         }
+//     }
+//
+//     results
+// }
