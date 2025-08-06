@@ -740,14 +740,28 @@ def circular_singles_encounters_prograde_stars(
                             # drop ecc of a_i by 10% and drop a_i by 10% (P.E. = -GMm/a)
                             # if already pumped in eccentricity, no longer circular, so don't need to follow other interactions
                             if disk_star_pro_orbs_ecc[circ_idx] <= disk_star_pro_orb_ecc_crit:
-                                new_orb_a_ecc, new_orb_a_circ, new_ecc_ecc, new_ecc_circ, id_num_out, id_num_flip = encounters_new_orba_ecc(
-                                    smbh_mass,
-                                    disk_star_pro_orbs_a[ecc_idx], disk_star_pro_orbs_a[circ_idx],
-                                    disk_star_pro_masses[ecc_idx], disk_star_pro_masses[circ_idx],
-                                    disk_star_pro_orbs_ecc[ecc_idx], disk_star_pro_orbs_ecc[circ_idx],
-                                    disk_star_pro_radius_rg[ecc_idx], disk_star_pro_radius_rg[circ_idx],
-                                    disk_star_pro_id_nums[ecc_idx], disk_star_pro_id_nums[circ_idx],
-                                    delta_energy_strong[i][j], flag_obj_types=0, cardano = cardano)
+
+                                if cardano:
+                                    new_orb_a_ecc, new_orb_a_circ, new_ecc_ecc, new_ecc_circ, id_num_out, id_num_flip = helper.encounters_new_orba_ecc(
+                                        smbh_mass,
+                                        disk_star_pro_orbs_a[ecc_idx], disk_star_pro_orbs_a[circ_idx],
+                                        disk_star_pro_masses[ecc_idx], disk_star_pro_masses[circ_idx],
+                                        disk_star_pro_orbs_ecc[ecc_idx], disk_star_pro_orbs_ecc[circ_idx],
+                                        disk_star_pro_radius_rg[ecc_idx], disk_star_pro_radius_rg[circ_idx],
+                                        disk_star_pro_id_nums[ecc_idx], disk_star_pro_id_nums[circ_idx],
+                                        delta_energy_strong[i][j], flag_obj_types=0)
+
+                                else:    
+                                    new_orb_a_ecc, new_orb_a_circ, new_ecc_ecc, new_ecc_circ, id_num_out, id_num_flip = encounters_new_orba_ecc(
+                                        smbh_mass,
+                                        disk_star_pro_orbs_a[ecc_idx], disk_star_pro_orbs_a[circ_idx],
+                                        disk_star_pro_masses[ecc_idx], disk_star_pro_masses[circ_idx],
+                                        disk_star_pro_orbs_ecc[ecc_idx], disk_star_pro_orbs_ecc[circ_idx],
+                                        disk_star_pro_radius_rg[ecc_idx], disk_star_pro_radius_rg[circ_idx],
+                                        disk_star_pro_id_nums[ecc_idx], disk_star_pro_id_nums[circ_idx],
+                                        delta_energy_strong[i][j], flag_obj_types=0, cardano = cardano)
+
+
                                 if id_num_out is not None:
                                     id_nums_unbound.append(id_num_out)
                                 if id_num_flip is not None:
