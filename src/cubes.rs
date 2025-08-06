@@ -42,28 +42,33 @@ pub fn cubic_y_root_cardano(x0: f64, y0: f64) -> ([f64; 3], usize) {
 
 #[pyfunction]
 pub fn cubic_finite_step_root_cardano(
-    x0: f64, 
-    y0: f64, 
+    x0: f64,
+    y0: f64,
     omega_s: f64
 ) -> ([[f64; 2]; 3], usize) {
     let p = 2.0 * (x0 - (omega_s * y0));
     let q = 2.0 * omega_s;
 
-    let roots_y = if p == 0.0 {
+    // This block determines the y-roots using Cardano's method.
+    // This logic appears to correctly mirror your Python version.
+    let (roots_y_array, y_count) = if p == 0.0 {
         ([(-q).cbrt(), 0.0, 0.0], 1)
     } else {
-        let delta = (q/2.0).powi(2) + (p/3.0).powi(3);
+        let delta = (q / 2.0).powi(2) + (p / 3.0).powi(3);
 
-        if delta > 0.0 {
-            // one real root path
+        if delta >= 0.0 {
+            // One real root path
             let sqrt_delta = delta.sqrt();
-            let u = (-q/2.0 + sqrt_delta).cbrt();
-            let v = (-q/2.0 - sqrt_delta).cbrt();
+            let u = (-q / 2.0 + sqrt_delta).cbrt();
+            let v = (-q / 2.0 - sqrt_delta).cbrt();
             ([u + v, 0.0, 0.0], 1)
         } else {
-            // three real roots path
+            // Three real roots path
             let term1 = 2.0 * (-p / 3.0).sqrt();
-            let phi = ((3.0 * q) / (p * term1)).acos();
+            // Note: Add clamping here to prevent panics from float errors
+            // if the argument is slightly outside [-1, 1]
+            let acos_arg = ((3.0 * q) / (p * term1)).max(-1.0).min(1.0);
+            let phi = acos_arg.acos();
 
             let y1 = term1 * (phi / 3.0).cos();
             let y2 = term1 * ((phi + 2.0 * PI) / 3.0).cos();
@@ -72,37 +77,101 @@ pub fn cubic_finite_step_root_cardano(
         }
     };
 
-    // 1. Initialize a 2D buffer. It's an array of 3 elements, where each
-    //    element is an array of 2 f64s, i.e., an [x, y] pair.
     let mut buffer = [[0.0; 2]; 3];
     let mut pair_count = 0;
 
-    // 2. Iterate through only the *valid* y-roots using the y_count.
-    // ????????
-    for i in 0..roots_y.1 {
-        let y_root = roots_y.0[i];
+    // Iterate through the valid y-roots found above.
+    for i in 0..y_count {
+        let y_root = roots_y_array[i];
 
-        // 3. The condition to form a valid pair is that the y-root can be used
-        //    to calculate a corresponding x-root.
-        if y_root > 0.0 {
+        // --- START: NEW FILTERING LOGIC ---
+        // This section now directly mirrors the Python version's filter.
+
+        // Calculate the corresponding x-root *before* filtering.
+        let x_root = -1.0 / (2.0 * y_root.powi(2));
+
+        // Apply all three conditions from the Python `indx_ok` mask.
+        let is_valid_pair = y_root > 0.0 && x_root.is_finite() && x_root < 0.0;
+
+        if is_valid_pair {
             // Ensure we don't write past the end of our 3-element buffer.
             if pair_count < 3 {
-                // Calculate the corresponding x-root inside the loop.
-                let x_root = -1.0 / (2.0 * y_root * y_root);
-
-                // 4. Assign the completed [x, y] pair to a row in the buffer.
                 buffer[pair_count] = [x_root, y_root];
                 pair_count += 1;
             } else {
-                // This case should be unreachable if y_count is max 3,
-                // but it is good practice for safety.
-                panic!("Exceeded maximum root pair capacity!");
+                // This should be unreachable if y_count is max 3,
+                // but it's good practice for safety.
+                break;
             }
         }
+        // --- END: NEW FILTERING LOGIC ---
     }
 
     (buffer, pair_count)
 }
+// #[pyfunction]
+// pub fn cubic_finite_step_root_cardano(
+//     x0: f64, 
+//     y0: f64, 
+//     omega_s: f64
+// ) -> ([[f64; 2]; 3], usize) {
+//     let p = 2.0 * (x0 - (omega_s * y0));
+//     let q = 2.0 * omega_s;
+//
+//     let roots_y = if p == 0.0 {
+//         ([(-q).cbrt(), 0.0, 0.0], 1)
+//     } else {
+//         let delta = (q/2.0).powi(2) + (p/3.0).powi(3);
+//
+//         if delta > 0.0 {
+//             // one real root path
+//             let sqrt_delta = delta.sqrt();
+//             let u = (-q/2.0 + sqrt_delta).cbrt();
+//             let v = (-q/2.0 - sqrt_delta).cbrt();
+//             ([u + v, 0.0, 0.0], 1)
+//         } else {
+//             // three real roots path
+//             let term1 = 2.0 * (-p / 3.0).sqrt();
+//             let phi = ((3.0 * q) / (p * term1)).acos();
+//
+//             let y1 = term1 * (phi / 3.0).cos();
+//             let y2 = term1 * ((phi + 2.0 * PI) / 3.0).cos();
+//             let y3 = term1 * ((phi + 4.0 * PI) / 3.0).cos();
+//             ([y1, y2, y3], 3)
+//         }
+//     };
+//
+//     // 1. Initialize a 2D buffer. It's an array of 3 elements, where each
+//     //    element is an array of 2 f64s, i.e., an [x, y] pair.
+//     let mut buffer = [[0.0; 2]; 3];
+//     let mut pair_count = 0;
+//
+//     // 2. Iterate through only the *valid* y-roots using the y_count.
+//     // ????????
+//     for i in 0..roots_y.1 {
+//         let y_root = roots_y.0[i];
+//
+//         // 3. The condition to form a valid pair is that the y-root can be used
+//         //    to calculate a corresponding x-root.
+//         if y_root > 0.0 {
+//             // Ensure we don't write past the end of our 3-element buffer.
+//             if pair_count < 3 {
+//                 // Calculate the corresponding x-root inside the loop.
+//                 let x_root = -1.0 / (2.0 * y_root * y_root);
+//
+//                 // 4. Assign the completed [x, y] pair to a row in the buffer.
+//                 buffer[pair_count] = [x_root, y_root];
+//                 pair_count += 1;
+//             } else {
+//                 // This case should be unreachable if y_count is max 3,
+//                 // but it is good practice for safety.
+//                 panic!("Exceeded maximum root pair capacity!");
+//             }
+//         }
+//     }
+//
+//     (buffer, pair_count)
+// }
 
 fn components_from_el(e: f64, l:f64, units: Option<&str>, smbh_mass: f64) -> (f64, f64) {
 
@@ -169,7 +238,9 @@ pub fn transition_physical_as_el(
     let omega_0 = g_times_mass.powi(2) / ell0.powi(3);
     let eps0 = ell0 * omega_0;
 
-    let omega_2 = (-2.0 * eps2).powi(3) / (g_times_mass);
+    let base = -2.0 * eps2;
+    let omega_2 = base.powf(1.5) / g_times_mass;
+    // let omega_2 = (-2.0 * eps2).powi(3) / (g_times_mass);
 
     let x0 = eps2/eps0;
     let y0 = 1.0; // ell2/ell0, which is 1 by construction
