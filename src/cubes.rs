@@ -176,9 +176,9 @@ pub fn cubic_finite_step_root_cardano(
 fn components_from_el(e: f64, l:f64, units: Option<&str>, smbh_mass: f64) -> (f64, f64) {
 
     let g_val = if units == Some("geometric") {
-        1.0
-    } else {
         G
+    } else {
+        1.0
     };
 
     let g_times_mass = g_val * smbh_mass;
