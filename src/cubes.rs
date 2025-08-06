@@ -67,7 +67,7 @@ pub fn cubic_finite_step_root_cardano(
             let term1 = 2.0 * (-p / 3.0).sqrt();
             // Note: Add clamping here to prevent panics from float errors
             // if the argument is slightly outside [-1, 1]
-            let acos_arg = ((3.0 * q) / (p * term1)).max(-1.0).min(1.0);
+            let acos_arg = ((3.0 * q) / (p * term1)).clamp(-1.0, 1.0); 
             let phi = acos_arg.acos();
 
             let y1 = term1 * (phi / 3.0).cos();
