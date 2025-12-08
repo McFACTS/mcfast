@@ -8,13 +8,12 @@ use crate::constants::G;
 #[allow(clippy::type_complexity)]
 #[allow(clippy::too_many_arguments)]
 #[pyfunction]
-pub fn tau_p_dyn_rs<'py>(
+pub fn tau_ecc_dyn_helper<'py>(
     py: Python<'py>,
     smbh_mass: f64,
     // in kg
     // contrary to documentation, this is either an ndarray, 
     // or a float, exactly half the time
-    // retro_mass: PyReadonlyArray1<f64>,
     retro_mass: &Bound<'_, PyAny>,
     ecc_arr: PyReadonlyArray1<f64>,
     inc_arr: PyReadonlyArray1<f64>,
@@ -140,7 +139,7 @@ pub fn tau_p_dyn_rs<'py>(
 
 #[pyfunction]
 #[allow(clippy::too_many_arguments)]
-pub fn tau_inc_helper<'py>(
+pub fn tau_inc_dyn_helper<'py>(
     py: Python<'py>,
     smbh_mass: f64,
     orbiter_mass_obj: &Bound<'_, PyAny>,
