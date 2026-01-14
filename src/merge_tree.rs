@@ -428,13 +428,13 @@ impl MergeForest {
 
     /// Get the generation (depth from leaves) of a black hole
     ///
-    /// Generation 1 = initial BH (leaf), Gen 2 = product of two Gen 1 BHs, etc.
+    /// Generation 0 = initial BH (leaf), Gen 1 = product of two Gen 0 BHs, etc.
     ///
     /// Args:
     ///     uuid: The UUID to query
     ///
     /// Returns:
-    ///     Generation number (1 for leaves)
+    ///     Generation number (0 for leaves)
     pub fn get_generation(&self, uuid: &str) -> PyResult<usize> {
         let idx = *self
             .uuid_to_index
@@ -452,11 +452,11 @@ impl MergeForest {
             }
 
             let gen = match nodes[idx].parents {
-                None => 1, // Leaf node
+                None => 0, // Leaf node
                 Some((p1, p2)) => {
                     let g1 = compute_gen(nodes, p1, cache);
                     let g2 = compute_gen(nodes, p2, cache);
-                    g1.max(g2) + 1
+                    g1.max(g2)
                 }
             };
 
