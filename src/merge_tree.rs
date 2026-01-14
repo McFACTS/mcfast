@@ -34,7 +34,7 @@ struct MergeRecord {
 }
 
 /// A forest of binary merge trees representing black hole merger histories
-#[pyclass(module = "mcfacts_helper")]
+#[pyclass(module = "mcfast")]
 pub struct MergeForest {
     /// All nodes in the forest, indexed by their position
     nodes: Vec<MergeNode>,
@@ -641,24 +641,3 @@ impl MergeForest {
         }
     }
 }
-
-// Usage:
-// ```python
-// import pickle
-// from mcfacts_helper import MergeForest
-//
-// # Create and save
-// forest = MergeForest("./data/", "galaxy_state_*")
-// with open("forest.pkl", "wb") as f:
-//     pickle.dump(forest, f)
-//
-// # Load later
-// with open("forest.pkl", "rb") as f:
-//     restored = pickle.load(f)
-//
-// Performance:
-// - 330-node forest serializes to ~16 KB
-// - Round-trip preserves all data (ancestors, roots, leaves, singletons)
-// ```
-//
-//

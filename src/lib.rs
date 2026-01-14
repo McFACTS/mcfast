@@ -19,7 +19,7 @@ use merge_tree::MergeForest;
 
 /// A Python module implemented in Rust.
 #[pymodule]
-fn mcfacts_helper(m: &Bound<'_, PyModule>) -> PyResult<()> {
+fn mcfast(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(encounters_new_orba_ecc, m)?)?;
     m.add_function(wrap_pyfunction!(cubic_finite_step_root_cardano, m)?)?;
     m.add_function(wrap_pyfunction!(analytical_kick_velocity_helper, m)?)?;

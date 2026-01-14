@@ -3,7 +3,7 @@ requires = ["maturin>=1.8,<2.0"]
 build-backend = "maturin"
 
 [project]
-name = "mcfacts_helper"
+name = "mcfast"
 requires-python = ">=3.8"
 classifiers = [
     "Programming Language :: Rust",
@@ -12,9 +12,8 @@ classifiers = [
 ]
 dynamic = ["version"]
 dependencies = [
-    "jupyter>=1.1.1",
-    "jupyterlab-vim>=4.1.4",
-    "notebook>=7.3.3",
+ "pandas>=2.0.3",
+ "tqdm>=4.67.1",
 ]
 [tool.maturin]
 features = ["pyo3/extension-module"]

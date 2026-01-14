@@ -1,5 +1,5 @@
 [package]
-name = "mcfacts_helper"
+name = "mcfast"
 version = "0.1.0"
 edition = "2021"
 exclude = [
@@ -10,7 +10,7 @@ exclude = [
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
-name = "mcfacts_helper"
+name = "mcfast"
 crate-type = ["cdylib"]
 
 [dependencies]
