@@ -117,7 +117,7 @@ pub fn tau_ecc_dyn_helper<'py>(
 
             let tau_p_dyn_denom_2 = 2.0f64.sqrt() * kappa * (inc.cos() - zeta).abs();
 
-            let tau_p_dyn_total = (tau_p_dyn_numerator_part / tau_p_dyn_denom_1) / tau_p_dyn_denom_2;
+            let tau_p_dyn_total = tau_p_dyn_numerator_part / tau_p_dyn_denom_1 / tau_p_dyn_denom_2;
 
             let tau_a_dyn = tau_p_dyn_total * (1.0 - ecc.powi(2)) * kappa * (inc.cos() - zeta).abs() / (kappa_bar * (inc.cos() - zeta_bar).abs());
             let tau_e_dyn = (2.0 * ecc.powi(2) / (1.0 - ecc.powi(2))) * 1.0 / (1.0 / tau_a_dyn - 1.0 / tau_p_dyn_total).abs();
