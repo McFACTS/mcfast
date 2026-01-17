@@ -1,6 +1,38 @@
+# McFAST v0.1.4
+
 Utilities and accelerated functions designed for use by the McFACTS team at CUNY.
 
 Still under early alpha development. Modules and functions that are not explicitly documented here are not yet ready for use.
+
+## Tau Incline/Eccentricity
+
+In order to accelerate the tau_inc_dyn and tau_ecc_dyn functions in `mcfacts/physics/disk_capture.py`, we provide `tau_inc_dyn_helper` and `tau_ecc_dyn_helper` functions that perform the vectorized array calculations in an optimized Rust function. The example implementation for `tau_inc_dyn_optimized` follows: it has the same call signature, takes the same inputs, and provides the same output as `tau_inc_dyn`, but is 2-3x faster.
+
+This function and its `ecc` variant can be further optimized by speeding up or eliminating the calls to si_from_r_g, which now make up the bulk of the runtime in each function (approximately 2/3rds).
+
+In particular, the `tau_semi_lat` functionality in `tau_ecc_dyn` is sped up at least 120x, with tau_semi_lat initially being timed at 6 seconds, while the `tau_ecc_dyn_helper` functionality that subsumes it is timed at 0.05 seconds.
+
+```python
+def tau_inc_dyn_optimized(smbh_mass, disk_bh_retro_orbs_a, disk_bh_retro_masses, omega, ecc, inc, disk_surf_density_func, r_g_in_meters):
+    """Computes inclination damping timescale from actual variables; used only for scaling.
+    Uses Rust-accelerated helper functions for the calculation: compare to tau_inc_dyn
+    """
+    # throw most things into SI units (that's right, ENGINEER UNITS!)
+    #    or more locally convenient variable names
+    SI_smbh_mass = smbh_mass * u.Msun.to("kg")  # kg
+    SI_semi_maj_axis = si_from_r_g(smbh_mass, disk_bh_retro_orbs_a, r_g_defined=r_g_in_meters).to("m").value
+    SI_orbiter_mass = disk_bh_retro_masses * u.Msun.to("kg")  # kg
+    cos_omega = np.cos(omega)
+
+    disk_surf_res = disk_surf_density_func(disk_bh_retro_orbs_a)
+
+    tau_i_dyn = tau_inc_dyn_helper(SI_smbh_mass, SI_orbiter_mass, ecc, inc, cos_omega, disk_surf_res, SI_semi_maj_axis)
+
+    assert np.isfinite(tau_i_dyn).all(), \
+        "Finite check failure: tau_i_dyn"
+
+    return tau_i_dyn
+```
 
 ## Merge Tree
 For M. McCarthy's black hole merge tracking feature.
