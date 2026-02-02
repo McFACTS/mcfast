@@ -1,4 +1,4 @@
-# McFAST v0.1.4
+# McFAST v0.1.5
 
 Utilities and accelerated functions designed for use by the McFACTS team at CUNY.
 

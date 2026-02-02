@@ -71,3 +71,5 @@ docs/_build/
 # Pyenv
 .python-version
 CLAUDE.md
+demo/DemosForNico/ForNico_TestRuns
+v11_output
