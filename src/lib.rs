@@ -8,6 +8,7 @@ use accelerants::cubes::{encounters_new_orba_ecc, cubic_y_root_cardano, cubic_fi
 use accelerants::powerlaw::{continuous_broken_powerlaw, dual_powerlaw, dual_powerlaw_with_grid, generate_r};
 use accelerants::tau::{tau_ecc_dyn_helper, tau_inc_dyn_helper};
 use accelerants::kick::analytical_kick_velocity_helper;
+use accelerants::torque::torque_mig_timescale_helper;
 use tools::merge_tree::MergeForest;
 
 /// A Python module implemented in Rust.
@@ -24,6 +25,7 @@ fn mcfast(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(generate_r, m)?)?;
     m.add_function(wrap_pyfunction!(tau_ecc_dyn_helper, m)?)?;
     m.add_function(wrap_pyfunction!(tau_inc_dyn_helper, m)?)?;
+    m.add_function(wrap_pyfunction!(torque_mig_timescale_helper, m)?)?;
     m.add_class::<MergeForest>()?;
     Ok(())
 }
