@@ -2,6 +2,8 @@
 use pyo3::prelude::*;
 use numpy::{PyArray1, PyArrayMethods, PyReadonlyArray1};
 
+use crate::{accelerants::luminosity::si_from_r_g, constants::G};
+
 #[allow(clippy::type_complexity)]
 #[allow(clippy::too_many_arguments)]
 #[pyfunction]
@@ -14,7 +16,7 @@ pub fn analytical_kick_velocity_helper<'py>(
     spin_angle1_arr: PyReadonlyArray1<f64>,
     spin_angle2_arr: PyReadonlyArray1<f64>,
     angle_arr: PyReadonlyArray1<f64>,
-) -> PyResult<Bound<'py, PyArray1<f64>>> {
+) -> Bound<'py, PyArray1<f64>> {
     
     let m1_slice = mass1_arr.as_slice().unwrap();
     let m2_slice = mass2_arr.as_slice().unwrap();
@@ -100,8 +102,38 @@ pub fn analytical_kick_velocity_helper<'py>(
         out_slice[i] = (term_1.powi(2) + term_2.powi(2) + v_par.powi(2)).sqrt();
     }
 
-    Ok(out_arr)
+    out_arr
+}
 
+#[pyfunction]
+pub fn merged_orb_ecc_helper<'py>(
+    py: Python<'py>,
+    bin_orbs_arr: PyReadonlyArray1<f64>,
+    v_kick_arr: PyReadonlyArray1<f64>,
+    smbh_mass: f64,
+) -> Bound<'py, PyArray1<f64>> { 
+
+    let bin_orbs_slice = bin_orbs_arr.as_slice().unwrap();
+    let v_kick_slice = v_kick_arr.as_slice().unwrap();
+
+    let out_arr = unsafe{ PyArray1::new(py, bin_orbs_slice.len(), false)};
+    let out_slice = unsafe{ out_arr.as_slice_mut().unwrap()};
+
+    for (i, (bin_orb, v_kick)) in bin_orbs_slice.iter()
+        .zip(v_kick_slice)
+        .enumerate() {
+
+        let orbs_a_units = si_from_r_g(smbh_mass, *bin_orb);
+
+        // under the assumption that the output here is in m/s, since G is in SI 
+        let v_kep = ((G * smbh_mass / orbs_a_units).sqrt()) / 1000.0; // turn to km/s
+
+        let merged_ecc = v_kick/v_kep;
+
+        out_slice[i] = merged_ecc
+    }
+
+    out_arr
 }
 
 //     # As in Akiba et al 2024 Appendix A, mass_2 should be the more massive BH in the binary.
