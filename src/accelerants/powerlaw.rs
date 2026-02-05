@@ -121,7 +121,6 @@ pub fn dual_powerlaw_with_grid<'py>(
 
 // to be used as r, r_pdf = generate_r(...)
 #[pyfunction]
-#[allow(clippy::too_many_arguments)]
 pub fn generate_r<'py>(
     py: Python<'py>,
     start: f64,

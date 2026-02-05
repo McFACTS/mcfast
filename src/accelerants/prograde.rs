@@ -5,7 +5,6 @@ use numpy::{PyArrayMethods, PyReadonlyArray1, PyReadonlyArray2};
 
 
 #[allow(clippy::collapsible_if)]
-#[allow(clippy::too_many_arguments)]
 pub fn _circ_prograde_stars<'py>(
     py: Python<'py>,
     smbh_mass: f64,

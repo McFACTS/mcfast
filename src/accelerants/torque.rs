@@ -5,7 +5,6 @@ const M_SUN_KG: f64 = 1.9884099e30;  // Solar mass in kg
 const G_SI: f64 = 6.67430e-11;     // Gravitational constant in m^3/(kg s^2)
 
 #[pyfunction]
-#[allow(clippy::too_many_arguments)]
 pub fn torque_mig_timescale_helper<'py>(
     py: Python<'py>,
     smbh_mass_msun: f64,

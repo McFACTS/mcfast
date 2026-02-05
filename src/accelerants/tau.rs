@@ -6,8 +6,6 @@ use numpy::{PyArray1, PyArrayMethods, PyReadonlyArray1};
 use crate::accelerants::{FloatArray1, G_SI};
 
 
-#[allow(clippy::type_complexity)]
-#[allow(clippy::too_many_arguments)]
 #[pyfunction]
 pub fn tau_ecc_dyn_helper<'py>(
     py: Python<'py>,
@@ -136,7 +134,6 @@ pub fn tau_ecc_dyn_helper<'py>(
 
 
 #[pyfunction]
-#[allow(clippy::too_many_arguments)]
 pub fn tau_inc_dyn_helper<'py>(
     py: Python<'py>,
     smbh_mass: f64,

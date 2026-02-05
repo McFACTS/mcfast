@@ -4,7 +4,6 @@ use numpy::{PyArray1, PyArrayMethods, PyReadonlyArray1};
 use std::f64::consts::PI;
 use crate::accelerants::{C_SI, FloatArray1, G_SI, M_SUN_KG, MPC_SI};
 
-#[allow(clippy::too_many_arguments)]
 #[pyfunction]
 pub fn gw_strain_helper<'py>(
     py: Python<'py>,

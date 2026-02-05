@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 // setup mstar runs
 // dont worry abt setup scripts, gives us a bunch of mass bins?
 // some of these, especially at the higher mass end, the higher the mas sof ht egalazy, the longer

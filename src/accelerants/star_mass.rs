@@ -69,7 +69,6 @@ pub fn star_wind_mass_loss_helper<'py>(
 }
 
 
-#[allow(clippy::too_many_arguments)]
 #[pyfunction]
 pub fn accrete_star_mass_helper<'py>(
     py: Python<'py>,

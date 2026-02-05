@@ -3,8 +3,6 @@ use numpy::{PyArray1, PyArrayMethods, PyReadonlyArray1};
 
 use crate::accelerants::{FloatArray1, G_SI, luminosity::si_from_r_g};
 
-#[allow(clippy::type_complexity)]
-#[allow(clippy::too_many_arguments)]
 #[pyfunction]
 pub fn analytical_kick_velocity_helper<'py>(
     py: Python<'py>,
