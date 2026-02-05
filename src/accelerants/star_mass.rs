@@ -1,6 +1,133 @@
+use std::f64::consts::PI;
+
 use pyo3::{exceptions::PyValueError, prelude::*};
 use numpy::{PyArray1, PyArrayMethods, PyReadonlyArray1};
 
+const M_SUN_KG: f64 = 1.9884099e30;  // Solar mass in kg
+const R_SUN_M: f64 = 6.957e8;
+const C_SI: f64 = 299792460.0;     // Speed of light in m/s
+const G_SI: f64 = 6.67430e-11;     // Gravitational constant in m^3/(kg s^2)
+const MPC_SI: f64 = 3.08568e22; // number of meters in a megaparsec
+const L_SUN_W: f64 = 3.828e26;       // watts
+const YR_S: f64 = 3.15576e7;         // seconds per Julian year
+
+#[pyfunction]
+pub fn star_wind_mass_loss_helper<'py>(
+    py: Python<'py>,
+    disk_star_pro_masses_arr: PyReadonlyArray1<f64>,
+    disk_star_pro_log_radius_arr: PyReadonlyArray1<f64>,
+    disk_star_pro_log_lum_arr: PyReadonlyArray1<f64>,
+    disk_opacity_arr: PyReadonlyArray1<f64>,
+    timestep_duration_yr: f64
+) -> (Bound<'py, PyArray1<f64>>, f64) {
+    let disk_star_pro_masses_slice = disk_star_pro_masses_arr.as_slice().unwrap();
+    let disk_star_pro_log_radius_slice = disk_star_pro_log_radius_arr.as_slice().unwrap();
+    let disk_star_pro_log_lum_slice = disk_star_pro_log_lum_arr.as_slice().unwrap();
+    let disk_opacity_slice = disk_opacity_arr.as_slice().unwrap();
+
+    let star_new_masses_arr = unsafe { PyArray1::new(py, disk_star_pro_masses_slice.len(), false) };
+    let star_new_masses_slice = unsafe { star_new_masses_arr.as_slice_mut().unwrap() };
+
+    let timestep_s = timestep_duration_yr * YR_S;
+
+    let mut mass_lost_acc = 0.0_f64; // accumulates in Msun
+
+    for (i, (((star_mass_msun, log_radius), log_lum), disk_opacity)) in disk_star_pro_masses_slice.iter()
+        .zip(disk_star_pro_log_radius_slice)
+        .zip(disk_star_pro_log_lum_slice)
+        .zip(disk_opacity_slice)
+        .enumerate()
+    {
+        // Convert everything to SI up front
+        let star_mass_kg = star_mass_msun * M_SUN_KG;
+        let star_radius_m = 10.0f64.powf(*log_radius) * R_SUN_M;
+        let star_lum_w = 10.0f64.powf(*log_lum) * L_SUN_W;
+        // disk_opacity is already in m²/kg
+
+        // Eddington luminosity (watts)
+        let l_edd_w = 4.0 * PI * G_SI * C_SI * star_mass_kg / disk_opacity;
+
+        // Escape speed (m/s)
+        let v_esc = (2.0 * G_SI * star_mass_kg / star_radius_m).sqrt();
+
+        // Dimensionless tanh argument (both numerator and denominator in watts)
+        let tanh_argument = (star_lum_w - l_edd_w) / (0.1 * l_edd_w);
+
+        // Mass loss rate (kg/s), already negative
+        let mdot = -(star_lum_w / v_esc.powi(2)) * (1.0 + f64::tanh(tanh_argument));
+
+        // Mass lost this timestep, converted to Msun
+        let mass_lost_msun = (mdot * timestep_s) / M_SUN_KG;
+
+        mass_lost_acc += mass_lost_msun;
+
+        let star_new_mass = star_mass_msun + mass_lost_msun;
+        debug_assert!(star_new_mass > 0.0, "star_new_mass <= 0 at index {i}");
+
+        star_new_masses_slice[i] = star_new_mass;
+    }
+
+    (star_new_masses_arr, mass_lost_acc)
+}
+
+
+// pub fn star_wind_mass_loss_helper<'py>(
+//     py: Python<'py>,
+//     disk_star_pro_masses_arr: PyReadonlyArray1<f64>,
+//     disk_star_pro_log_radius_arr: PyReadonlyArray1<f64>,
+//     disk_star_pro_log_lum_arr: PyReadonlyArray1<f64>,
+//     disk_opacity_arr: PyReadonlyArray1<f64>,
+//     timestep_duration_yr: f64
+// ) -> (Bound<'py, PyArray1<f64>>, f64) {
+//     let disk_star_pro_masses_slice = disk_star_pro_masses_arr.as_slice().unwrap();
+//     let disk_star_pro_log_radius_slice = disk_star_pro_log_radius_arr.as_slice().unwrap();
+//     let disk_star_pro_log_lum_slice = disk_star_pro_log_lum_arr.as_slice().unwrap();
+//     let disk_opacity_slice = disk_opacity_arr.as_slice().unwrap();
+//
+//     let star_new_masses_arr = unsafe { PyArray1::new(py, disk_star_pro_masses_slice.len(), false) };
+//     let star_new_masses_slice = unsafe { star_new_masses_arr.as_slice_mut().unwrap() };
+//
+//     // quick and dirty way, manual accumulator
+//     let mut mass_lost_acc = 0.0;
+//
+//     for (i, (((star_mass, disk_star_pro_log_radius), disk_star_pro_log_lum), disk_opacity)) in disk_star_pro_masses_slice.iter()
+//         .zip(disk_star_pro_log_radius_slice)
+//         .zip(disk_star_pro_log_lum_slice)
+//         .zip(disk_opacity_slice)
+//         .enumerate() {
+//
+//         let star_radius = 10.0f64.powf(*disk_star_pro_log_radius); // turn into Rsun??
+//         let star_lum = 10.0f64.powf(*disk_star_pro_log_lum); // turn into Lsun
+//         // star_mass is in Msun
+//         // and noting that timestep_duration_year_si is in years
+//         // let timestep_duration_yr_si = //
+//
+//         // todo: turn to Lsun ???
+//         let l_edd = 4.0 * PI * G_SI * C_SI * star_mass / disk_opacity;
+//
+//         // todo: turn to km/s
+//         // star mass in solar masses, star radius is solar radii
+//         // let v_esc = (2.0 * G_SI * star_mass / star_radius).sqrt(); 
+//         let v_esc = (2.0 * G_SI * (star_mass * M_SUN_KG) / (star_radius * R_SUN_M)).sqrt(); 
+//
+//         let tanh_argument = (star_lum - l_edd) / (0.1 * l_edd);
+//
+//         // todo: turn to Msun/yr
+//         let mdot_edd = -(star_lum/v_esc.powi(2)) * (1.0 + f64::tanh(tanh_argument));
+//
+//         // todo: turn to Msun
+//         // note that because of mdot_edd, already negative
+//         let mass_lost = mdot_edd * timestep_duration_yr;
+//
+//         mass_lost_acc += mass_lost;
+//         let star_new_mass = star_mass + (mdot_edd * timestep_duration_yr);
+//
+//         star_new_masses_slice[i] = star_new_mass;
+//     }
+//
+//     (star_new_masses_arr, mass_lost_acc)
+//
+// }
 
 pub fn accrete_star_mass_helper(
     disk_star_pro_masses_arr: PyReadonlyArray1<f64>,
