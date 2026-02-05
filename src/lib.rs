@@ -12,7 +12,7 @@ use accelerants::{
     torque::torque_mig_timescale_helper,
     luminosity::{shock_luminosity_helper, jet_luminosity_helper},
     gw::gw_strain_helper,
-    star_mass::star_wind_mass_loss_helper,
+    star_mass::{star_wind_mass_loss_helper, accrete_star_mass_helper},
 };
 use tools::merge_tree::MergeForest;
 
@@ -36,6 +36,7 @@ fn mcfast(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(shock_luminosity_helper, m)?)?;
     m.add_function(wrap_pyfunction!(gw_strain_helper, m)?)?;
     m.add_function(wrap_pyfunction!(star_wind_mass_loss_helper, m)?)?;
+    m.add_function(wrap_pyfunction!(accrete_star_mass_helper, m)?)?;
     m.add_class::<MergeForest>()?;
     Ok(())
 }
