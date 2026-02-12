@@ -1,10 +1,23 @@
-# McFAST v0.1.5
+# McFAST v0.1.6
 
 Utilities and accelerated functions designed for use by the McFACTS team at CUNY.
 
-Still under early alpha development. Modules and functions that are not explicitly documented here are not yet ready for use.
+Functions currently fully tested for integration:
+tau_inc_dyn_helper
+tau_ecc_dyn_helper
+gw_strain_helper
+analytical_kick_velocity_helper
+merged_orb_ecc_helper
+torque_mig_timescale_helper
+generate_r
+shock_luminosity_helper
+jet_luminosity_helper
 
-## Tau Incline/Eccentricity
+Functions currently in testing for integration:
+star_wind_mass_loss_helper
+accrete_star_mass_helper
+
+## Example: Tau Incline/Eccentricity
 
 In order to accelerate the tau_inc_dyn and tau_ecc_dyn functions in `mcfacts/physics/disk_capture.py`, we provide `tau_inc_dyn_helper` and `tau_ecc_dyn_helper` functions that perform the vectorized array calculations in an optimized Rust function. The example implementation for `tau_inc_dyn_optimized` follows: it has the same call signature, takes the same inputs, and provides the same output as `tau_inc_dyn`, but is 2-3x faster.
 
