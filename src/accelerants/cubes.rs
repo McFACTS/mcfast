@@ -2,7 +2,7 @@
 //!
 
 use pyo3::prelude::*;
-use crate::constants::G;
+use crate::accelerants::G_SI;
 
 use std::f64::consts::PI;
 
@@ -105,7 +105,7 @@ pub fn cubic_finite_step_root_cardano(
 fn components_from_el(e: f64, l:f64, units: Option<&str>, smbh_mass: f64) -> (f64, f64) {
 
     let g_val = if units == Some("geometric") {
-        G
+        G_SI
     } else {
         1.0
     };
@@ -131,7 +131,6 @@ fn components_from_el(e: f64, l:f64, units: Option<&str>, smbh_mass: f64) -> (f6
     (orb_a / (2.0 * smbh_mass), ecc)
 }
 
-#[allow(clippy::too_many_arguments)]
 #[pyfunction(signature = (e1, l1, e2, l2, delta_e, m1, m2, units = None, smbh_mass = None))]
 pub fn transition_physical_as_el(
     e1: f64, 
@@ -152,7 +151,7 @@ pub fn transition_physical_as_el(
     let g_val = if units == "geometric" {
         1.0
     } else {
-        G
+        G_SI
     };
 
     // Assume consistent units SI only
@@ -254,7 +253,6 @@ pub fn transition_physical_as_el(
 }
 
 /// Calculate new orb_a and ecc values for two objects that dynamically interact
-#[allow(clippy::too_many_arguments)]
 #[pyfunction(signature=(smbh_mass, orb_a_give, orb_a_take, mass_give, mass_take, ecc_give, ecc_take, radius_give, radius_take, id_num_give, id_num_take, delta_energy_strong, flag_obj_types))]
 pub fn encounters_new_orba_ecc(
     smbh_mass: f64,
