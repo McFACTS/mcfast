@@ -94,40 +94,56 @@ pub fn accrete_star_mass_helper<'py>(
     let mut mass_gained_acc = 0.0f64;
     let mut immortal_mass_lost_acc = 0.0f64;
 
-    for (i, (((star_mass, orb), sound_speed), density)) in disk_star_pro_orbs_slice.iter()
+    for (i, (((star_mass, orb), sound_speed), density)) in disk_star_pro_masses_slice.iter()
         .zip(disk_star_pro_orbs_slice)
         .zip(sound_speed_slice)
         .zip(disk_density_slice)
         .enumerate() {
 
-        // turn to meters (already there, no?)
-        let r_bondi = 2.0 * G_SI * star_mass / sound_speed.powi(2);
-        
-        // oddly, two different versions of star_mass are being used, with one being in solar
-        // masses and the other potentially not??
+        const SECONDS_PER_YEAR: f64 = 3.15576e7;
+
+        let star_mass_kg = star_mass * M_SUN_KG;
+        let r_bondi = 2.0 * G_SI * star_mass_kg / sound_speed.powi(2);
+        // r_hill_rg uses dimensionless ratio of masses, so Msun is fine there
         let r_hill_rg = orb * (star_mass / (3.0 * (star_mass + smbh_mass))).powf(1.0/3.0);
-        let r_hll_m = si_from_r_g(smbh_mass, r_hill_rg);
+        let r_hill_m = si_from_r_g(smbh_mass, r_hill_rg);
+        let min_radius = r_bondi.min(r_hill_m);
 
-        let min_radius = r_bondi.min(r_hll_m);
+        let mdot_kg_per_s = (PI / disk_star_luminosity_factor) * density * sound_speed * min_radius.powi(2);
+        let mass_gained_msun = mdot_kg_per_s * SECONDS_PER_YEAR * timestep_duration_yr / M_SUN_KG;
 
-        // in kg / year
-        let mdot = (PI / disk_star_luminosity_factor) * density * sound_speed * min_radius.powi(2);
+        let new_mass_unclamped = star_mass + mass_gained_msun;
+        let new_mass = new_mass_unclamped.min(disk_star_initial_mass_cutoff).max(0.0);
 
-        // accrete mass onto stars
+
+        // // turn to meters (already there, no?)
+        // let r_bondi = 2.0 * G_SI * star_mass / sound_speed.powi(2);
+        //
+        // // oddly, two different versions of star_mass are being used, with one being in solar
+        // // masses and the other potentially not??
+        // let r_hill_rg = orb * (star_mass / (3.0 * (star_mass + smbh_mass))).powf(1.0/3.0);
+        // let r_hll_m = si_from_r_g(smbh_mass, r_hill_rg);
+        //
+        // let min_radius = r_bondi.min(r_hll_m);
+        //
+        // // in kg / year
+        // let mdot = (PI / disk_star_luminosity_factor) * density * sound_speed * min_radius.powi(2);
+        //
+        // // accrete mass onto stars
+        // // to Msun
+        // let new_mass = (star_mass + mdot * timestep_duration_yr).clamp(0.0, disk_star_initial_mass_cutoff);
+        //
         // to Msun
-        let new_mass = (star_mass + mdot * timestep_duration_yr).clamp(0.0, disk_star_initial_mass_cutoff);
-
-        // to Msun
-        let mass_gained = mdot * timestep_duration_yr;
+        // let mass_gained = mdot * timestep_duration_yr;
 
         let immortal_mass_lost = if new_mass == disk_star_initial_mass_cutoff {
             let immortal_mass_diff = new_mass - star_mass;
-            mass_gained - immortal_mass_diff
+            mass_gained_msun - immortal_mass_diff
         } else {
             0.0
         };
 
-        mass_gained_acc += mass_gained;
+        mass_gained_acc += mass_gained_msun;
         immortal_mass_lost_acc += immortal_mass_lost;
 
         star_new_masses_slice[i] = new_mass;
@@ -135,3 +151,5 @@ pub fn accrete_star_mass_helper<'py>(
 
     (star_new_masses_arr, mass_gained_acc, immortal_mass_lost_acc)
 }
+
+
