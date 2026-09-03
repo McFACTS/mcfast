@@ -15,7 +15,7 @@ pub fn gw_strain_helper<'py>(
     smbh_mass: f64, 
     agn_redshift: f64,
     flag_include_old_gw_freq: bool, // defaults to true?
-) -> PyResult<(FloatArray1<'py>, FloatArray1<'py>)> {
+) -> PyResult<(FloatArray1<'py>, FloatArray1<'py>, FloatArray1<'py>)> {
 
     let mass_2_slice = mass_2_arr.as_slice().unwrap();
     let obj_sep_slice = obj_sep_arr.as_slice().unwrap();
@@ -23,6 +23,9 @@ pub fn gw_strain_helper<'py>(
 
     let char_strain_arr = unsafe { PyArray1::new(py, mass_2_slice.len(), false) };
     let char_strain_slice = unsafe { char_strain_arr.as_slice_mut().unwrap() };
+
+    let strain_arr = unsafe { PyArray1::new(py, mass_2_slice.len(), false) };
+    let strain_slice = unsafe { strain_arr.as_slice_mut().unwrap() };
 
     let nu_gw_arr = unsafe { PyArray1::new(py, mass_2_slice.len(), false) };
     let nu_gw_slice = unsafe { nu_gw_arr.as_slice_mut().unwrap() };
@@ -102,9 +105,10 @@ pub fn gw_strain_helper<'py>(
             let char_strain = strain_factor*strain;
 
             char_strain_slice[i] = char_strain;
+            strain_slice[i] = strain;
             nu_gw_slice[i] = nu_gw;
         }
-        Ok((char_strain_arr, nu_gw_arr))
+        Ok((char_strain_arr, strain_arr, nu_gw_arr))
 
     } else if let Ok(mass_1) = mass_1_obj.extract::<f64>() {
 
@@ -172,9 +176,10 @@ pub fn gw_strain_helper<'py>(
             let char_strain = strain_factor*strain;
 
             char_strain_slice[i] = char_strain;
+            strain_slice[i] = strain;
             nu_gw_slice[i] = nu_gw;
         }
-        Ok((char_strain_arr, nu_gw_arr))
+        Ok((char_strain_arr, strain_arr, nu_gw_arr))
 
     } else {
         Err(PyValueError::new_err("Input `retro_mass derived from retrograde_bh_masses is neither a numeric scalar nor a numpy ndarray."))
