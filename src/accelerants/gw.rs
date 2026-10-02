@@ -2,7 +2,91 @@ use pyo3::{exceptions::PyValueError, prelude::*};
 use numpy::{PyArray1, PyArrayMethods, PyReadonlyArray1};
 
 use std::f64::consts::PI;
-use crate::accelerants::{C_SI, FloatArray1, G_SI, M_SUN_KG, MPC_SI};
+use crate::accelerants::{C_SI, FloatArray1, G_SI, M_SUN_KG, MPC_SI, units::si_from_r_g};
+
+// scalar peters time of orbital shrinkage helper
+fn time_of_orbital_shrinkage(m1: f64, m2: f64, sep_initial: f64, sep_final: f64) -> f64 {
+    // taking these in as solar masses, turning to kg
+    let mass1 = m1 * M_SUN_KG;
+    let mass2 = m2 * M_SUN_KG;
+
+    // these should already be in meters?? 
+    //  sep_initial = sep_initial.to(u.m).value
+    //  sep_final = sep_final.to(u.m).value
+
+    // powi is non-const, so we can't set it up as a constant value
+    let g_c: f64 = ((64.0 / 5.0) * (G_SI.powi(3))) * (C_SI.powi(-5));
+    let beta = g_c * mass1 * mass2 * (mass1 + mass2);
+    let time_of_shrinkage = ((sep_initial.powi(4)) - (sep_final.powi(4))) / 4.0 / beta;
+
+    debug_assert!(time_of_shrinkage >= 0.0);
+
+    // unit in seconds
+    time_of_shrinkage
+}
+
+
+#[pyfunction(signature=(smbh_mass, disk_bh_pro_orbs_a_arr, disk_bh_pro_masses_arr, disk_bh_pro_orbs_ecc_arr, timestep_duration_yr, inner_disk_outer_radius, disk_inner_stable_circ_orb))]
+pub fn bh_near_smbh<'py>(
+    py: Python<'py>,
+    smbh_mass: f64,
+    disk_bh_pro_orbs_a_arr: PyReadonlyArray1<f64>,
+    disk_bh_pro_masses_arr: PyReadonlyArray1<f64>,
+    disk_bh_pro_orbs_ecc_arr: PyReadonlyArray1<f64>,
+    timestep_duration_yr: f64,
+    inner_disk_outer_radius: f64,
+    disk_inner_stable_circ_orb: f64,
+) -> PyResult<FloatArray1<'py>> {
+
+    let disk_bh_pro_orbs_a_slice = disk_bh_pro_orbs_a_arr.as_slice().unwrap();
+    let disk_bh_pro_masses_slice = disk_bh_pro_masses_arr.as_slice().unwrap();
+    // not currently used, but may be used in the future
+    let _disk_bh_pro_orbs_ecc_slice = disk_bh_pro_orbs_ecc_arr.as_slice().unwrap();
+
+    let new_disk_bh_pro_orbs_a_arr = unsafe { PyArray1::new(py, disk_bh_pro_orbs_a_slice.len(), false) };
+    let new_disk_bh_pro_orbs_a_slice = unsafe { new_disk_bh_pro_orbs_a_arr.as_slice_mut().unwrap() };
+
+    // minimum safe distance in r_g
+    let min_safe_distance = disk_inner_stable_circ_orb.max(inner_disk_outer_radius);
+
+    // for (i, ((orb_a, mass), ecc)) in disk_bh_pro_orbs_a_slice.iter()
+    for (i, (orb_a, mass)) in disk_bh_pro_orbs_a_slice.iter()
+        .zip(disk_bh_pro_masses_slice)
+        // .zip(disk_bh_pro_orbs_ecc_slice)
+        .enumerate() {
+
+        let new_loc = if *orb_a < min_safe_distance {
+
+            // not currently used, but may be added later
+            // let ecc_factor_arr = (1.0 - (ecc).powf(2.0)).powf(7.0/2.0);
+
+            // time_of_orbital_shrinkage returns seconds, turn it into years
+            let decay_timesteps = time_of_orbital_shrinkage(
+                smbh_mass, 
+                *mass, 
+                si_from_r_g(smbh_mass, *orb_a), 
+                0.0
+            ) * 31557600.0 / timestep_duration_yr;
+
+            // in cases where decay_timesteps is 0, clamp decrement to 0
+            // more elegant way to do it?
+            let decrement = if decay_timesteps == 0.0 {
+                0.0
+            } else {
+                1.0 - (1.0/decay_timesteps)
+            };
+
+            (decrement * orb_a).clamp(1.0, f64::INFINITY)
+        } else {
+            *orb_a
+        };
+
+        new_disk_bh_pro_orbs_a_slice[i] = new_loc;
+    }
+
+    Ok(new_disk_bh_pro_orbs_a_arr)
+}
+
 
 #[pyfunction(signature=(mass_1_obj, mass_2_arr, obj_sep_arr, timestep_duration_yr, old_gw_freq_arr, smbh_mass, agn_redshift, flag_include_old_gw_freq))]
 pub fn gw_strain_helper<'py>(
