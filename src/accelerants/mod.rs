@@ -19,6 +19,7 @@ pub mod evolution;
 use pyo3::prelude::*;
 use numpy::PyArray1;
 type FloatArray1<'py> = Bound<'py, PyArray1<f64>>;
+type IntArray1<'py> = Bound<'py, PyArray1<i64>>;
 
 /// Gravitational constant in cm^3 g^-1 s^-2
 pub const G_CGS: f64 = 6.67430e-8;
