@@ -17,6 +17,12 @@ pub const fn si_from_r_g(smbh_mass: f64, distance_r_g: f64) -> f64 {
     distance_r_g * r_g
 }
 
+pub const fn r_g_from_units(smbh_mass: f64, distance_r_g: f64) -> f64 {
+    let smbh_mass_kg = smbh_mass * M_SUN_KG;
+    let r_g = (G_SI * smbh_mass_kg) / (C_SI * C_SI);
+    distance_r_g / r_g
+}
+
 
 #[pyfunction]
 /// Calculates the SI distance in meters from the mass and distance_r_g of an SMBH using
