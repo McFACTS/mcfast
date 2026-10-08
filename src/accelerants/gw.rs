@@ -2,7 +2,7 @@ use pyo3::{exceptions::PyValueError, prelude::*};
 use numpy::{PyArray1, PyArrayMethods, PyReadonlyArray1};
 
 use std::f64::consts::PI;
-use crate::accelerants::{C_SI, FloatArray1, G_SI, M_SUN_KG, MPC_SI, units::{self, si_from_r_g}};
+use crate::accelerants::{C_SI, FloatArray1, IntArray1, G_SI, M_SUN_KG, MPC_SI, units::{self, si_from_r_g}};
 
 #[pyfunction]
 pub fn gw_hardening_helper<'py>(
@@ -12,10 +12,10 @@ pub fn gw_hardening_helper<'py>(
     bin_ecc_arr: PyReadonlyArray1<f64>,
     bin_sep_arr: PyReadonlyArray1<f64>,
     bin_time_to_merge_arr: PyReadonlyArray1<f64>,
-    flag_merging_arr: PyReadonlyArray1<f64>,
+    flag_merging_arr: PyReadonlyArray1<i64>,
     smbh_mass: f64,
     timestep_length: f64,
-) -> PyResult<(FloatArray1<'py>, FloatArray1<'py>, FloatArray1<'py>)> {
+) -> PyResult<(FloatArray1<'py>, FloatArray1<'py>, IntArray1<'py>)> {
 
     let mass_1_slice = mass_1_arr.as_slice().unwrap();
     let mass_2_slice = mass_2_arr.as_slice().unwrap();
@@ -46,7 +46,7 @@ pub fn gw_hardening_helper<'py>(
         .zip(flag_merging_slice)
         .enumerate() {
 
-        let flag_not_merging = *flag_merging >= 0.0;
+        let flag_not_merging = *flag_merging >= 0;
 
         // may be fine to have this if statement, since it's allowing us to 
         // skip a bunch of non-vectorizable calls
@@ -84,9 +84,9 @@ pub fn gw_hardening_helper<'py>(
             *flag_merging
         } else if is_merging {
             // have to make a rust-local version of rg_from_units? didn't have one before ig
-           -2.0
+           -2
         } else {
-            0.0
+            0
         };
     }
     Ok((new_bin_sep_arr, new_time_to_merge_arr, new_flag_merging_arr))
@@ -168,7 +168,7 @@ fn time_of_orbital_shrinkage(m1: f64, m2: f64, sep_initial: f64, sep_final: f64)
 
 
 #[pyfunction(signature=(smbh_mass, disk_bh_pro_orbs_a_arr, disk_bh_pro_masses_arr, disk_bh_pro_orbs_ecc_arr, timestep_duration_yr, inner_disk_outer_radius, disk_inner_stable_circ_orb))]
-pub fn bh_near_smbh<'py>(
+pub fn bh_near_smbh_helper<'py>(
     py: Python<'py>,
     smbh_mass: f64,
     disk_bh_pro_orbs_a_arr: PyReadonlyArray1<f64>,

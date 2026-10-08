@@ -12,7 +12,7 @@ use accelerants::{
     kick::{analytical_kick_velocity_helper, merged_orb_ecc_helper},
     torque::torque_mig_timescale_helper,
     luminosity::{shock_luminosity_helper, jet_luminosity_helper},
-    gw::{gw_strain_helper, bh_near_smbh, gw_hardening_helper},
+    gw::{gw_strain_helper, bh_near_smbh_helper, gw_hardening_helper},
     star_mass::{star_wind_mass_loss_helper, accrete_star_mass_helper},
     prograde::encounters_prograde_sweep_helper,
     units::{si_from_r_g_helper, r_g_from_units_helper, r_schwarzschild_of_m_helper},
@@ -46,7 +46,7 @@ fn mcfast(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(r_g_from_units_helper, m)?)?;
     m.add_function(wrap_pyfunction!(tde_helper, m)?)?;
     m.add_function(wrap_pyfunction!(tde_helper_variant, m)?)?;
-    m.add_function(wrap_pyfunction!(bh_near_smbh, m)?)?;
+    m.add_function(wrap_pyfunction!(bh_near_smbh_helper, m)?)?;
     m.add_function(wrap_pyfunction!(gw_hardening_helper, m)?)?;
     m.add_class::<MergeForest>()?;
     Ok(())
