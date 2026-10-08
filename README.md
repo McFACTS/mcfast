@@ -1,4 +1,4 @@
-# McFAST v0.1.10
+# McFAST v0.1.11
 
 Utilities and accelerated functions designed for use by the McFACTS team at CUNY.
 
@@ -16,6 +16,8 @@ Functions currently fully tested for integration:
 - si_from_r_g_helper
 - r_g_from_units_helper
 - r_schwarzschild_of_m_helper
+- bh_near_smbh
+- gw_hardening
 
 Functions currently in testing for integration:
 star_wind_mass_loss_helper
