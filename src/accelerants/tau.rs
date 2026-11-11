@@ -3,7 +3,7 @@ use std::f64::consts::PI;
 use pyo3::{exceptions::PyValueError, prelude::*};
 use numpy::{PyArray1, PyArrayMethods, PyReadonlyArray1};
 
-use crate::accelerants::{FloatArray1, G_SI};
+use crate::accelerants::{FloatArray1, G_SI, is_close};
 
 
 #[pyfunction]
@@ -46,7 +46,18 @@ pub fn tau_ecc_dyn_helper<'py>(
             .zip(disk_surf_res_slice)
             .enumerate() { 
 
+            // maybe figure out a short-circuiting implementation?
             let cos_omega = omega.cos();
+
+            // shadowing
+            let cos_omega = if (is_close(*inc, 0.0) || is_close(*ecc, 0.0)) && is_close(cos_omega, 0.0) {
+                0.1
+            } else {
+                cos_omega
+            };
+
+            // mask_here = (np.isclose(inc, 0.0) | np.isclose(ecc, 0.0)) & np.isclose(cos_omega, 0.0)
+            // cos_omega[mask_here] = 0.01
 
             let period = 2.0 * PI * (semi.powi(3) / (G_SI * smbh_mass)).sqrt();
             let rec = semi * (1.0 - (ecc.powi(2)));
@@ -74,7 +85,13 @@ pub fn tau_ecc_dyn_helper<'py>(
             let tau_p_dyn_total = tau_p_dyn_numerator_part / tau_p_dyn_denom_1 / tau_p_dyn_denom_2;
 
             let tau_a_dyn = tau_p_dyn_total * (1.0 - ecc.powi(2)) * kappa * (inc.cos() - zeta).abs() / (kappa_bar * (inc.cos() - zeta_bar).abs());
-            let tau_e_dyn = (2.0 * ecc.powi(2) / (1.0 - ecc.powi(2))) * 1.0 / (1.0 / tau_a_dyn - 1.0 / tau_p_dyn_total).abs();
+            // adding in
+            // tau_e_dyn[tau_p_dyn == 0] = 0.
+            let tau_e_dyn = if tau_p_dyn_total == 0.0 { 
+                0.0
+            } else {
+                (2.0 * ecc.powi(2) / (1.0 - ecc.powi(2))) * 1.0 / (1.0 / tau_a_dyn - 1.0 / tau_p_dyn_total).abs()
+            };
 
             tau_e_dyn_slice[i] = tau_e_dyn;
             tau_a_dyn_slice[i] = tau_a_dyn;
@@ -90,7 +107,15 @@ pub fn tau_ecc_dyn_helper<'py>(
             .zip(disk_surf_res_slice)
             .enumerate() { 
 
+            // maybe figure out a short-circuiting implementation?
             let cos_omega = omega.cos();
+
+            // shadowing
+            let cos_omega = if (is_close(*inc, 0.0) || is_close(*ecc, 0.0)) && is_close(cos_omega, 0.0) {
+                0.1
+            } else {
+                cos_omega
+            };
 
             let period = 2.0 * PI * (semi.powi(3) / (G_SI * smbh_mass)).sqrt();
             let rec = semi * (1.0 - (ecc.powi(2)));
@@ -118,7 +143,12 @@ pub fn tau_ecc_dyn_helper<'py>(
             let tau_p_dyn_total = tau_p_dyn_numerator_part / tau_p_dyn_denom_1 / tau_p_dyn_denom_2;
 
             let tau_a_dyn = tau_p_dyn_total * (1.0 - ecc.powi(2)) * kappa * (inc.cos() - zeta).abs() / (kappa_bar * (inc.cos() - zeta_bar).abs());
-            let tau_e_dyn = (2.0 * ecc.powi(2) / (1.0 - ecc.powi(2))) * 1.0 / (1.0 / tau_a_dyn - 1.0 / tau_p_dyn_total).abs();
+
+            let tau_e_dyn = if tau_p_dyn_total == 0.0 { 
+                0.0
+            } else {
+                (2.0 * ecc.powi(2) / (1.0 - ecc.powi(2))) * 1.0 / (1.0 / tau_a_dyn - 1.0 / tau_p_dyn_total).abs()
+            };
 
             tau_e_dyn_slice[i] = tau_e_dyn;
             tau_a_dyn_slice[i] = tau_a_dyn;

@@ -42,3 +42,13 @@ pub const R_SUN_M: f64 = 6.957e8;
 const EARTH_TO_SOL: f64 = 1.9884099e+30 / 5.9721679e+24;
 const JUPITER_TO_SOL: f64 = 1.9884099e+30 / 1.8981246e+27;
 
+const RTOL: f64 = 1e-05;
+const ATOL: f64 = 1e-08;
+
+/// Matches the default behavior of [np.isclose](https://numpy.org/doc/stable/reference/generated/numpy.isclose.html)
+pub fn is_close(a: f64, b: f64) -> bool {
+    let diff = (a - b).abs();
+    let tol = ATOL + RTOL * b.abs();
+    diff <= tol
+}
+
